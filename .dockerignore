@@ -1,0 +1,20 @@
+# ไม่รวม node_modules (จะ install ใหม่ใน Docker)
+node_modules
+backend/node_modules
+frontend/node_modules
+
+# ไม่รวม build output เก่า (จะ build ใหม่ใน Docker)
+frontend/dist
+
+# ไม่รวมไฟล์ Git
+.git
+.gitignore
+
+# ไม่รวมไฟล์ dev/test
+backend/test_*.js
+backend/test_upload.gcode
+
+# ไม่รวม Windows-specific files
+Thumbs.db
+desktop.ini
+*.lnk

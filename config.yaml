@@ -1,0 +1,18 @@
+name: "Bambu Monitor"
+description: "Real-time 3D layer visualization dashboard for Bambu Lab P2S printer"
+version: "1.0.1"
+slug: "bambu_monitor"
+init: false
+
+arch:
+  - aarch64
+
+host_network: true
+
+ports:
+  3001/tcp: 3001
+ports_description:
+  3001/tcp: "Bambu Monitor Web UI"
+
+options: {}
+schema: {}

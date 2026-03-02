@@ -1,0 +1,25 @@
+{
+  "name": "bambu-monitor",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Real-time 3D print visualization for Bambu Lab P2S",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev:backend": "cd backend && node server.js",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "build": "cd frontend && npm run build",
+    "start": "npm run build && cd backend && node server.js",
+    "install:all": "npm install && cd frontend && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  },
+  "dependencies": {
+    "basic-ftp": "^5.2.0",
+    "multer": "^2.0.2"
+  }
+}
