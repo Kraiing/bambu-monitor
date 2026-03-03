@@ -288,6 +288,9 @@ body,
 .hud__brand-icon {
   font-size: 24px;
   filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.4));
+  display: flex;
+  align-items: center;
+  line-height: 1;
 }
 
 .hud__brand-name {
@@ -365,10 +368,16 @@ body,
   bottom: 24px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   pointer-events: auto;
   z-index: 10;
   max-width: 250px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 229, 255, 0.2) transparent;
+  padding-right: 4px;
 }
 
 @media (max-width: 768px) {
@@ -376,7 +385,24 @@ body,
     left: 12px;
     bottom: 12px;
     max-width: 180px;
+    max-height: calc(100vh - 80px);
+    gap: 6px;
   }
+}
+
+/* Webkit scrollbar for stats panel */
+.hud__stats::-webkit-scrollbar {
+  width: 4px;
+}
+.hud__stats::-webkit-scrollbar-track {
+  background: transparent;
+}
+.hud__stats::-webkit-scrollbar-thumb {
+  background: rgba(0, 229, 255, 0.2);
+  border-radius: 2px;
+}
+.hud__stats::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 229, 255, 0.4);
 }
 
 .hud__chart-container {
@@ -577,6 +603,15 @@ body,
 }
 
 /* ===== Header Actions ===== */
+
+.hud__header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  pointer-events: auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
 
 .hud__controls {
   display: flex;

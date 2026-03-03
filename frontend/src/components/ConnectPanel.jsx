@@ -2,6 +2,20 @@ import { useState, useEffect, useRef } from 'react';
 import usePrinterStore from '../store/usePrinterStore';
 
 const BACKEND_URL = `${window.location.protocol}//${window.location.host}`;
+
+function BambuPrinterLogo({ size = 48 }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="4" width="28" height="24" rx="3" fill="#1a1a2e" stroke="#00e5ff" strokeWidth="1.2" />
+            <rect x="5" y="7" width="22" height="14" rx="2" fill="#0a0a16" stroke="rgba(0,229,255,0.4)" strokeWidth="0.8" />
+            <line x1="7" y1="18" x2="25" y2="18" stroke="#00e5ff" strokeWidth="1.2" opacity="0.6" />
+            <rect x="13" y="11" width="6" height="4" rx="1" fill="#2a2a3e" stroke="#00e5ff" strokeWidth="0.6" />
+            <line x1="16" y1="15" x2="16" y2="17" stroke="#ff6633" strokeWidth="1.5" strokeLinecap="round" />
+            <circle cx="16" cy="25" r="1.2" fill="#00e5ff" opacity="0.9" />
+            <rect x="6" y="3" width="20" height="2.5" rx="1.2" fill="#1a1a2e" stroke="#00e5ff" strokeWidth="0.6" />
+        </svg>
+    );
+}
 const STORAGE_KEY = 'bambu_monitor_credentials';
 
 // โหลดค่าที่บันทึกไว้จาก localStorage
@@ -193,7 +207,7 @@ export default function ConnectPanel() {
             <div className="connect-overlay">
                 <div className="connect-panel" style={{ textAlign: 'center' }}>
                     <div className="connect-panel__logo">
-                        <div className="connect-panel__logo-icon">🖨️</div>
+                        <div className="connect-panel__logo-icon"><BambuPrinterLogo size={48} /></div>
                     </div>
                     <h1 className="connect-panel__title">Bambu Monitor</h1>
                     <p className="connect-panel__subtitle">กำลังเชื่อมต่ออัตโนมัติ...</p>
@@ -227,7 +241,7 @@ export default function ConnectPanel() {
         <div className="connect-overlay">
             <form className="connect-panel" onSubmit={handleSubmit}>
                 <div className="connect-panel__logo">
-                    <div className="connect-panel__logo-icon">🖨️</div>
+                    <div className="connect-panel__logo-icon"><BambuPrinterLogo size={48} /></div>
                 </div>
                 <h1 className="connect-panel__title">Bambu Monitor</h1>
                 <p className="connect-panel__subtitle">Real-time 3D Print Visualization</p>

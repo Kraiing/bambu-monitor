@@ -1,6 +1,6 @@
 name: "Bambu Monitor"
 description: "Real-time 3D layer visualization dashboard for Bambu Lab P2S printer"
-version: "1.0.1"
+version: "1.1.0"
 slug: "bambu_monitor"
 init: false
 

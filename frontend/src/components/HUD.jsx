@@ -5,6 +5,29 @@ import usePrinterStore from '../store/usePrinterStore';
 const BACKEND_URL = `${window.location.protocol}//${window.location.host}`;
 
 /**
+ * Bambu Printer Icon — SVG แทน emoji 🖨️
+ */
+function BambuPrinterIcon({ size = 28 }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* Enclosure body */}
+            <rect x="2" y="4" width="28" height="24" rx="3" fill="#1a1a2e" stroke="#00e5ff" strokeWidth="1.2" />
+            {/* Glass door */}
+            <rect x="5" y="7" width="22" height="14" rx="2" fill="#0a0a16" stroke="rgba(0,229,255,0.4)" strokeWidth="0.8" />
+            {/* Build plate */}
+            <line x1="7" y1="18" x2="25" y2="18" stroke="#00e5ff" strokeWidth="1.2" opacity="0.6" />
+            {/* Print head (nozzle) */}
+            <rect x="13" y="11" width="6" height="4" rx="1" fill="#2a2a3e" stroke="#00e5ff" strokeWidth="0.6" />
+            <line x1="16" y1="15" x2="16" y2="17" stroke="#ff6633" strokeWidth="1.5" strokeLinecap="round" />
+            {/* LED indicator */}
+            <circle cx="16" cy="25" r="1.2" fill="#00e5ff" opacity="0.9" />
+            {/* Top frame bar */}
+            <rect x="6" y="3" width="20" height="2.5" rx="1.2" fill="#1a1a2e" stroke="#00e5ff" strokeWidth="0.6" />
+        </svg>
+    );
+}
+
+/**
  * แปลงเวลาที่เหลือ (นาที) เป็นรูปแบบ HH:MM
  */
 function formatETA(minutes) {
@@ -333,6 +356,8 @@ function FtpStatusPanel() {
     if (layers) return null;
     // ซ่อนถ้ายังไม่ connected
     if (!connected) return null;
+    // ซ่อนถ้า FTP available (inline card จัดการแล้ว — ป้องกัน AUTO-LOAD แสดง 2 ครั้ง)
+    if (autoLoadAvailable) return null;
 
     const handleUpload = async (e) => {
         const file = e.target.files?.[0];
@@ -535,7 +560,7 @@ export default function HUD() {
             {/* ===== Header ===== */}
             <div className="hud__header">
                 <div className="hud__brand">
-                    <span className="hud__brand-icon">🖨️</span>
+                    <span className="hud__brand-icon"><BambuPrinterIcon size={28} /></span>
                     <span className="hud__brand-name">Bambu Monitor</span>
                 </div>
 
