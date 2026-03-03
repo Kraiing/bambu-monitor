@@ -18,6 +18,8 @@ const usePrinterStore = create((set, get) => ({
     gcodeState: null,
     printSpeed: null,
     fanSpeed: null,
+    auxFanSpeed: null,
+    chamberFanSpeed: null,
     subtaskName: null,
 
     // ข้อมูลสีเส้นพิมพ์
@@ -26,6 +28,7 @@ const usePrinterStore = create((set, get) => ({
 
     // ข้อมูลชิ้นงานที่ข้าม
     skippedObjects: [],
+    detectedObjects: [],      // unique object IDs จาก parsed G-code
 
     // G-code layers data
     layers: null,
@@ -77,6 +80,8 @@ const usePrinterStore = create((set, get) => ({
             gcodeState: data.gcodeState,
             printSpeed: data.printSpeed,
             fanSpeed: data.fanSpeed,
+            auxFanSpeed: data.auxFanSpeed ?? state.auxFanSpeed,
+            chamberFanSpeed: data.chamberFanSpeed ?? state.chamberFanSpeed,
             subtaskName: data.subtaskName,
             filamentColor: data.filamentColor ?? state.filamentColor,
             filamentType: data.filamentType ?? state.filamentType,
@@ -109,10 +114,23 @@ const usePrinterStore = create((set, get) => ({
         if (Array.isArray(data)) {
             set({ layers: data });
         } else {
+            // Extract unique object IDs จาก layers
+            const objectIds = new Set();
+            if (data.layers) {
+                for (const layer of data.layers) {
+                    for (const seg of layer) {
+                        if (seg.objectId != null) {
+                            objectIds.add(seg.objectId);
+                        }
+                    }
+                }
+            }
+
             set({
                 layers: data.layers,
                 layerCumulativeTimes: data.layerCumulativeTimes || null,
                 totalPrintTime: data.totalPrintTime || null,
+                detectedObjects: Array.from(objectIds).sort((a, b) => a - b),
             });
             // Feed timing data to tracker
             if (data.layerCumulativeTimes) {
@@ -155,6 +173,8 @@ const usePrinterStore = create((set, get) => ({
                 gcodeState: null,
                 printSpeed: null,
                 fanSpeed: null,
+                auxFanSpeed: null,
+                chamberFanSpeed: null,
                 subtaskName: null,
                 filamentColor: null,
                 filamentType: null,
@@ -167,6 +187,7 @@ const usePrinterStore = create((set, get) => ({
                 ftpMode: null,
                 ftpCapabilities: null,
                 ftpReason: null,
+                detectedObjects: [],
             };
         });
     },

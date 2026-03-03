@@ -595,6 +595,103 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', uptime: process.uptime() });
 });
 
+/**
+ * POST /api/control/fan
+ * ควบคุมพัดลม: { fan: "aux"|"cooling"|"chamber", speed: 0-100 }
+ */
+app.post('/api/control/fan', (req, res) => {
+    const { fan, speed } = req.body;
+
+    if (!fan || !['aux', 'cooling', 'chamber'].includes(fan)) {
+        return res.status(400).json({ error: 'Invalid fan type. Use: aux, cooling, chamber' });
+    }
+    if (speed == null || speed < 0 || speed > 100) {
+        return res.status(400).json({ error: 'Speed must be 0-100' });
+    }
+    if (!mqttClient.isConnected()) {
+        return res.status(503).json({ error: 'MQTT not connected' });
+    }
+
+    // P1=part cooling, P2=aux, P3=chamber
+    const fanMap = { cooling: 1, aux: 2, chamber: 3 };
+    const pValue = fanMap[fan];
+    const pwm = Math.round((speed / 100) * 255);
+
+    const payload = {
+        print: {
+            sequence_id: "0",
+            command: "gcode_line",
+            param: `M106 P${pValue} S${pwm}\n`
+        }
+    };
+
+    const success = mqttClient.publish(payload);
+    if (success) {
+        console.log(`[API] Fan control: ${fan} -> ${speed}% (S${pwm})`);
+        res.json({ success: true, fan, speed, pwm });
+    } else {
+        res.status(500).json({ error: 'Failed to publish MQTT command' });
+    }
+});
+
+/**
+ * POST /api/control/skip-object
+ * ข้ามชิ้นงาน: { objectIds: [1, 2, ...] }
+ */
+app.post('/api/control/skip-object', (req, res) => {
+    const { objectIds } = req.body;
+
+    if (!Array.isArray(objectIds) || objectIds.length === 0) {
+        return res.status(400).json({ error: 'objectIds must be a non-empty array' });
+    }
+    if (!objectIds.every(id => Number.isInteger(id) && id >= 0)) {
+        return res.status(400).json({ error: 'All objectIds must be non-negative integers' });
+    }
+    if (!mqttClient.isConnected()) {
+        return res.status(503).json({ error: 'MQTT not connected' });
+    }
+
+    const payload = {
+        print: {
+            sequence_id: "0",
+            command: "print_option",
+            option: "skip_object",
+            obj_list: objectIds
+        }
+    };
+
+    const success = mqttClient.publish(payload);
+    if (success) {
+        console.log(`[API] Skip objects: [${objectIds.join(', ')}]`);
+        res.json({ success: true, skippedIds: objectIds });
+    } else {
+        res.status(500).json({ error: 'Failed to publish MQTT command' });
+    }
+});
+
+/**
+ * GET /api/detected-objects
+ * ดึง unique object IDs จาก parsed G-code
+ */
+app.get('/api/detected-objects', (req, res) => {
+    if (!parsedLayers || !parsedLayers.layers) {
+        return res.json({ objects: [] });
+    }
+
+    const objectIds = new Set();
+    for (const layer of parsedLayers.layers) {
+        for (const seg of layer) {
+            if (seg.objectId != null) {
+                objectIds.add(seg.objectId);
+            }
+        }
+    }
+
+    res.json({
+        objects: Array.from(objectIds).sort((a, b) => a - b)
+    });
+});
+
 // API Routes จบแล้ว -> ที่เหลือโยนให้ React Router จัดการ (Catch-all)
 app.get('*', (req, res) => {
     res.sendFile(path.join(frontendDistPath, 'index.html'));

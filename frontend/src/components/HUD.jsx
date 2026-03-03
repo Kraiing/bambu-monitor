@@ -137,6 +137,177 @@ function CameraButtons() {
 }
 
 /**
+ * Fan Slider — slider ที่ใช้ local state เพื่อ UX ลื่น
+ */
+function FanSlider({ fan, value, onChange, disabled }) {
+    const [localValue, setLocalValue] = useState(value ?? 0);
+    const isDragging = useRef(false);
+
+    useEffect(() => {
+        if (!isDragging.current && value != null) {
+            setLocalValue(value);
+        }
+    }, [value]);
+
+    return (
+        <>
+            <input
+                type="range"
+                className="hud__fan-slider"
+                min="0" max="100" step="5"
+                value={localValue}
+                onChange={(e) => {
+                    isDragging.current = true;
+                    setLocalValue(parseInt(e.target.value));
+                }}
+                onMouseUp={() => {
+                    isDragging.current = false;
+                    onChange(localValue);
+                }}
+                onTouchEnd={() => {
+                    isDragging.current = false;
+                    onChange(localValue);
+                }}
+                disabled={disabled}
+            />
+            <span className="hud__fan-value">
+                {localValue}%
+            </span>
+        </>
+    );
+}
+
+/**
+ * Fan Control Panel — ควบคุมพัดลม Part Cooling / AUX / Chamber
+ */
+function FanControlPanel() {
+    const fanSpeed = usePrinterStore((s) => s.fanSpeed);
+    const auxFanSpeed = usePrinterStore((s) => s.auxFanSpeed);
+    const chamberFanSpeed = usePrinterStore((s) => s.chamberFanSpeed);
+    const connected = usePrinterStore((s) => s.connected);
+    const [sending, setSending] = useState(false);
+
+    if (!connected) return null;
+
+    const toPercent = (val) => val != null ? Math.round((val / 255) * 100) : null;
+
+    const handleFanChange = async (fan, percent) => {
+        if (sending) return;
+        setSending(true);
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/control/fan`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fan, speed: percent }),
+            });
+            if (!res.ok) {
+                const data = await res.json();
+                console.error('[Fan] Error:', data.error);
+            }
+        } catch (err) {
+            console.error('[Fan] Request failed:', err.message);
+        } finally {
+            setSending(false);
+        }
+    };
+
+    const fans = [
+        { id: 'cooling', label: 'Cooling', icon: '💨', value: toPercent(fanSpeed) },
+        { id: 'aux', label: 'AUX', icon: '🌀', value: toPercent(auxFanSpeed) },
+    ];
+    // Chamber fan เฉพาะ X1C/X1E — ซ่อนถ้าไม่มีข้อมูล
+    if (chamberFanSpeed != null) {
+        fans.push({ id: 'chamber', label: 'Chamber', icon: '🔄', value: toPercent(chamberFanSpeed) });
+    }
+
+    return (
+        <div className="hud__fan-control">
+            <div className="hud__fan-control-title">Fan Control</div>
+            {fans.map((fan) => (
+                <div key={fan.id} className="hud__fan-row">
+                    <span className="hud__fan-icon">{fan.icon}</span>
+                    <span className="hud__fan-label">{fan.label}</span>
+                    <FanSlider
+                        fan={fan.id}
+                        value={fan.value}
+                        onChange={(percent) => handleFanChange(fan.id, percent)}
+                        disabled={sending}
+                    />
+                </div>
+            ))}
+        </div>
+    );
+}
+
+/**
+ * Skip Object Panel — ข้ามชิ้นงานระหว่างพิมพ์
+ */
+function SkipObjectPanel() {
+    const detectedObjects = usePrinterStore((s) => s.detectedObjects);
+    const skippedObjects = usePrinterStore((s) => s.skippedObjects);
+    const gcodeState = usePrinterStore((s) => s.gcodeState);
+    const connected = usePrinterStore((s) => s.connected);
+    const [sending, setSending] = useState(false);
+
+    if (!connected || gcodeState !== 'RUNNING' || detectedObjects.length === 0) {
+        return null;
+    }
+
+    const handleSkip = async (objectId) => {
+        if (sending) return;
+        if (skippedObjects.includes(objectId)) return;
+
+        const newSkipList = [...skippedObjects, objectId];
+
+        setSending(true);
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/control/skip-object`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ objectIds: newSkipList }),
+            });
+            if (!res.ok) {
+                const data = await res.json();
+                console.error('[Skip] Error:', data.error);
+            }
+        } catch (err) {
+            console.error('[Skip] Request failed:', err.message);
+        } finally {
+            setSending(false);
+        }
+    };
+
+    return (
+        <div className="hud__skip-objects">
+            <div className="hud__skip-objects-title">Skip Objects ({detectedObjects.length})</div>
+            <div className="hud__skip-objects-list">
+                {detectedObjects.map((objId) => {
+                    const isSkipped = skippedObjects.includes(objId);
+                    return (
+                        <div
+                            key={objId}
+                            className={`hud__skip-object-item ${isSkipped ? 'hud__skip-object-item--skipped' : ''}`}
+                        >
+                            <span className="hud__skip-object-label">
+                                Object #{objId}
+                            </span>
+                            <button
+                                className={`hud__skip-object-btn ${isSkipped ? 'hud__skip-object-btn--skipped' : ''}`}
+                                onClick={() => handleSkip(objId)}
+                                disabled={sending || isSkipped}
+                                title={isSkipped ? 'Already skipped' : 'Skip this object'}
+                            >
+                                {isSkipped ? '⏭️ Skipped' : '⏩ Skip'}
+                            </button>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
+/**
  * FTP Status Panel + Upload — แสดงสถานะ FTP + Re-test + Upload fallback
  */
 function FtpStatusPanel() {
@@ -551,6 +722,12 @@ export default function HUD() {
 
                 {/* Temperature Graph */}
                 <TempGraph />
+
+                {/* Fan Control */}
+                <FanControlPanel />
+
+                {/* Skip Object */}
+                <SkipObjectPanel />
             </div>
 
             {/* ===== Progress Panel (ล่างขวา) ===== */}

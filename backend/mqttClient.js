@@ -3,6 +3,7 @@ const mqtt = require('mqtt');
 let client = null;
 let latestStatus = null;
 let lastFilamentLog = null;
+let connectionSerial = null;
 
 /**
  * เชื่อมต่อ MQTT กับ Bambu Lab P2S ผ่าน TLS (port 8883)
@@ -13,6 +14,7 @@ let lastFilamentLog = null;
  */
 function connect(config, onData, onError) {
   const { printerIP, serial, accessCode } = config;
+  connectionSerial = serial;
 
   // ปิดการเชื่อมต่อเก่า (ถ้ามี)
   if (client) {
@@ -119,6 +121,8 @@ function connect(config, onData, onError) {
         gcodeState: print.gcode_state ?? null,
         printSpeed: print.spd_lvl ?? null,
         fanSpeed: print.cooling_fan_speed ?? null,
+        auxFanSpeed: print.big_fan1_speed != null ? parseInt(print.big_fan1_speed) : null,
+        chamberFanSpeed: print.big_fan2_speed != null ? parseInt(print.big_fan2_speed) : null,
         wifiSignal: print.wifi_signal ?? null,
         subtaskName: print.subtask_name ?? null,
         gcodeFile: print.gcode_file ?? null,     // full path, e.g. "/sdcard/xxx.gcode.3mf"
@@ -164,8 +168,34 @@ function disconnect() {
   if (client) {
     client.end(true);
     client = null;
+    connectionSerial = null;
     console.log(`[MQTT] ตัดการเชื่อมต่อแล้ว`);
   }
+}
+
+/**
+ * Publish คำสั่งไปยังเครื่องพิมพ์ผ่าน MQTT
+ * @param {Object} payload - JSON payload
+ * @returns {boolean} สำเร็จหรือไม่
+ */
+function publish(payload) {
+  if (!client || !client.connected || !connectionSerial) {
+    console.error('[MQTT] Cannot publish: not connected');
+    return false;
+  }
+
+  const topic = `device/${connectionSerial}/request`;
+  const message = JSON.stringify(payload);
+
+  client.publish(topic, message, { qos: 0 }, (err) => {
+    if (err) {
+      console.error('[MQTT] Publish error:', err.message);
+    } else {
+      console.log(`[MQTT] Published to ${topic}:`, message.substring(0, 120));
+    }
+  });
+
+  return true;
 }
 
 /**
@@ -182,4 +212,4 @@ function isConnected() {
   return client && client.connected;
 }
 
-module.exports = { connect, disconnect, getLatestStatus, isConnected };
+module.exports = { connect, disconnect, getLatestStatus, isConnected, publish };
