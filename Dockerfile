@@ -23,7 +23,7 @@ RUN cd backend && npm install --omit=dev
 RUN cd frontend && npm install && npm run build
 
 # ——— ตั้งค่า startup script ———
-RUN cp /app/run.sh /run.sh && chmod +x /run.sh
+RUN sed -i 's/\r$//' /app/run.sh && cp /app/run.sh /run.sh && chmod +x /run.sh
 
 # Port ที่ backend ฟัง
 EXPOSE 3001
